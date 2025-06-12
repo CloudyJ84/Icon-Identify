@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Icon Identifier Game</title>
+    <!-- Tailwind CSS CDN for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome CDN for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Custom CSS for finer control and animations */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh; /* Ensure body fills viewport */
+            margin: 0;
+        }
+
+        .game-container {
+            background-color: #ffffff; /* White card background */
+            border-radius: 1.5rem; /* More rounded corners */
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            max-width: 90%;
+            width: 600px; /* Fixed width for better control */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: all 0.3s ease-in-out; /* Smooth transitions for content changes */
+            transform: scale(0.95); /* Slightly scale down for a subtle effect */
+            animation: fadeIn 0.5s ease-out forwards; /* Fade in on load */
+            max-height: 95vh; /* Allow container to scroll */
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+            position: relative; /* For sound toggle button positioning */
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        .icon-display {
+            font-size: 6rem; /* Large icon size */
+            color: #4a5568; /* Darker grey for icons */
+            margin-bottom: 2rem;
+            transition: transform 0.3s ease-out;
+            animation: bounceIn 0.6s ease-out; /* Bounce in on new icon */
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); }
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr); /* 2 columns by default */
+            gap: 1rem;
+            width: 100%;
+        }
+
+        @media (min-width: 640px) { /* Adjust for larger screens */
+            .button-grid {
+                grid-template-columns: repeat(3, 1fr); /* 3 columns on medium screens */
+            }
+        }
+
+        .choice-button {
+            background-color: #6366f1; /* Primary blue */
+            color: white;
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.75rem; /* Rounded button corners */
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            outline: none; /* Remove outline on focus */
+        }
+
+        .choice-button:hover:not(.correct-answer-button):not(.incorrect-answer-button) {
+            background-color: #4f46e5; /* Darker blue on hover */
+            transform: translateY(-2px); /* Slight lift effect */
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .choice-button:active:not(.correct-answer-button):not(.incorrect-answer-button) {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Visual feedback styles */
+        .choice-button.correct-answer-button {
+            background-color: #22c55e; /* Green for correct */
+            pointer-events: none; /* Disable interaction after selection */
+        }
+        .choice-button.incorrect-answer-button {
+            background-color: #ef4444; /* Red for incorrect */
+            pointer-events: none; /* Disable interaction after selection */
+        }
+        .choice-button.disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .start-button {
+            background-color: #22c55e; /* Green for start */
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 0.75rem;
+            font-size: 1.25rem;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            outline: none;
+        }
+
+        .start-button:hover {
+            background-color: #16a34a;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .start-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .restart-button {
+            background-color: #ef4444; /* Red for restart */
+        }
+
+        .restart-button:hover {
+            background-color: #dc2626;
+        }
+
+        .difficulty-button {
+            background-color: #9ca3af; /* Grey for difficulty */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            outline: none;
+            flex-grow: 1; /* Make buttons grow to fill space */
+        }
+
+        .difficulty-button:hover {
+            background-color: #6b7280;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .difficulty-button.selected {
+            background-color: #3b82f6; /* Blue when selected */
+        }
+
+        /* Timer bar styling (will be hidden, but keeping for reference if needed later) */
+        .timer-bar-container {
+            display: none; /* Hide the timer bar container */
+            width: 100%;
+            height: 0.75rem;
+            background-color: #e2e8f0;
+            border-radius: 9999px;
+            margin-top: 1rem;
+            overflow: hidden;
+        }
+
+        .timer-bar {
+            height: 100%;
+            background-color: #fcd34d; /* Yellow for timer */
+            width: 100%;
+            border-radius: 9999px;
+            transition: width 0.1s linear;
+        }
+
+        /* Message box styling */
+        .message-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.9); /* Darker, more prominent */
+            color: white;
+            padding: 25px 40px; /* Larger padding */
+            border-radius: 12px; /* More rounded */
+            z-index: 1000;
+            display: none;
+            font-size: 1.4rem; /* Larger font */
+            font-weight: 600;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5); /* More pronounced shadow */
+            animation: slideIn 0.3s ease-out;
+            text-align: center;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translate(-50%, -60%); }
+            to { opacity: 1; transform: translate(-50%, -50%); }
+        }
+
+        .message-box.show {
+            display: block;
+        }
+
+        .message-box span {
+            display: block; /* Ensure lines break for correct answer/description */
+            font-size: 1rem;
+            font-weight: normal;
+            margin-top: 0.5rem;
+            color: #d1d5db; /* Lighter text for description */
+        }
+
+        .sound-toggle-button {
+            position: absolute;
+            bottom: 1.5rem; /* Moved to bottom */
+            right: 1.5rem; /* Kept on right */
+            background-color: #e2e8f0;
+            color: #4a5568;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease-out;
+            font-size: 1.2rem;
+            border: none;
+            outline: none;
+        }
+
+        .sound-toggle-button:hover {
+            background-color: #cbd5e0;
+            transform: scale(1.05);
+        }
+
+        .complete-button {
+            background-color: #3b82f6; /* Blue for completion */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            outline: none;
+            margin-top: 1rem; /* Space from other buttons */
+        }
+
+        .complete-button:hover {
+            background-color: #2563eb;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+        .complete-button:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-500 to-purple-600">
+    <div class="game-container" id="gameContainer">
+        <!-- Sound Toggle Button -->
+        <button id="soundToggleButton" class="sound-toggle-button">
+            <i id="soundIcon" class="fas fa-volume-up"></i>
+        </button>
+
+        <!-- Start Screen -->
+        <div id="startScreen" class="w-full flex flex-col items-center">
+            <h1 class="text-4xl font-extrabold text-gray-800 mb-6">Icon Identifier</h1>
+            <p class="text-gray-600 text-lg mb-8">Test your knowledge of common computer icons!</p>
+
+            <div class="mb-8 w-full flex justify-center gap-4">
+                <button id="easyBtn" class="difficulty-button selected" data-difficulty="easy">Easy</button>
+                <button id="mediumBtn" class="difficulty-button" data-difficulty="medium">Medium</button>
+                <button id="hardBtn" class="difficulty-button" data-difficulty="hard">Hard</button>
+            </div>
+
+            <button id="startGameBtn" class="start-button">Start Game</button>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="gameScreen" class="hidden w-full flex flex-col items-center">
+            <div class="w-full flex justify-between items-center mb-4">
+                <p class="text-xl font-semibold text-gray-700">Score: <span id="scoreDisplay">0</span></p>
+                <p class="text-xl font-semibold text-gray-700">Question: <span id="questionCountDisplay">0</span> / <span id="maxQuestionsDisplay">0</span></p>
+                <!-- Removed Time display -->
+            </div>
+            <!-- Removed Timer Bar Container -->
+            <div id="iconDisplay" class="icon-display">
+                <i class="fas fa-question-circle"></i>
+            </div>
+
+            <div id="choicesContainer" class="button-grid">
+                <!-- Choice buttons will be dynamically inserted here -->
+            </div>
+        </div>
+
+        <!-- End Screen -->
+        <div id="endScreen" class="hidden w-full flex flex-col items-center">
+            <h2 class="text-4xl font-extrabold text-gray-800 mb-4">Game Over!</h2>
+            <p class="text-2xl text-gray-600 mb-8">Your final score: <span id="finalScoreDisplay" class="font-bold text-indigo-600">0</span></p>
+            <button id="restartGameBtn" class="start-button restart-button">Play Again</button>
+            <button id="completeGameBtn" class="complete-button">Mark as Complete</button>
+        </div>
+    </div>
+
+    <!-- Message Box for in-game notifications -->
+    <div id="messageBox" class="message-box"></div>
+
+    <script>
+        // SCORM 1.2 API Wrapper (simplified for embedding in single HTML)
+        const SCORM = (function() {
+            let apiHandle = null;
+            let initialized = false;
+            let findAttempts = 0;
+            const MAX_FIND_ATTEMPTS = 500; // Max depth/attempts to find API
+
+            function findAPI(win) {
+                let API = null;
+                let findAttempts = 0;
+                while ((win.API == null) && (win.parent != null) && (win.parent != win) && (findAttempts < MAX_FIND_ATTEMPTS)) {
+                    findAttempts++;
+                    win = win.parent;
+                }
+                if (win.API != null) {
+                    API = win.API;
+                    console.log("SCORM: API found at window level after " + findAttempts + " attempts.");
+                }
+                return API;
+            }
+
+            function getAPI() {
+                if (apiHandle == null) {
+                    apiHandle = findAPI(window);
+                    if (apiHandle == null && window.opener != null && typeof(window.opener) != "undefined") {
+                        console.log("SCORM: Attempting to find API in opener window.");
+                        apiHandle = findAPI(window.opener);
+                    }
+                }
+                return apiHandle;
+            }
+
+            function callAPI(func, args) {
+                const API = getAPI();
+                if (API && initialized) {
+                    try {
+                        const result = API[func].apply(API, args);
+                        console.log(`SCORM: ${func} called with args [${args.join(', ')}], result: ${result}`);
+                        if (result === "false") {
+                            const errorCode = API.LMSGetLastError();
+                            const errorString = API.LMSGetErrorString(errorCode);
+                            console.error(`SCORM Error: ${func} failed. Code: ${errorCode}, String: ${errorString}`);
+                        }
+                        return result;
+                    } catch (e) {
+                        console.error(`SCORM Error during ${func}:`, e);
+                        return "false";
+                    }
+                } else if (!initialized) {
+                    console.warn(`SCORM: Attempted to call ${func} before initialization. API Initialized: ${initialized}`);
+                } else {
+                    console.warn(`SCORM: API not found. Skipping ${func}.`);
+                }
+                return "false"; // Indicate failure if API not available or initialized
+            }
+
+            return {
+                init: function() {
+                    if (initialized) return true;
+                    console.log("SCORM: Initializing LMS communication...");
+                    const API = getAPI();
+                    if (API) {
+                        const result = callAPI("LMSInitialize", [""]);
+                        if (result === "true") {
+                            initialized = true;
+                            console.log("SCORM: LMSInitialize successful.");
+                            return true;
+                        } else {
+                            console.error("SCORM: LMSInitialize failed.");
+                            return false;
+                        }
+                    } else {
+                        console.warn("SCORM: LMS API not found during initialization.");
+                        return false;
+                    }
+                },
+                set: function(param, value) {
+                    if (!initialized) {
+                        console.warn(`SCORM: Cannot set ${param} before initialization.`);
+                        return "false";
+                    }
+                    return callAPI("LMSSetValue", [param, value]);
+                },
+                get: function(param) {
+                    if (!initialized) {
+                        console.warn(`SCORM: Cannot get ${param} before initialization.`);
+                        return "";
+                    }
+                    return callAPI("LMSGetValue", [param]);
+                },
+                commit: function() {
+                    if (!initialized) {
+                        console.warn("SCORM: Cannot commit before initialization.");
+                        return "false";
+                    }
+                    return callAPI("LMSCommit", [""]);
+                },
+                finish: function() {
+                    if (!initialized) {
+                        console.warn("SCORM: Cannot finish before initialization.");
+                        return "false";
+                    }
+                    console.log("SCORM: Attempting to finish LMS communication.");
+                    const result = callAPI("LMSFinish", [""]);
+                    if (result === "true") {
+                        initialized = false; // Mark as uninitialized after successful finishing
+                        apiHandle = null; // Clear handle
+                        console.log("SCORM: LMSFinish successful.");
+                        return true;
+                    } else {
+                        console.error("SCORM: LMSFinish failed.");
+                        return false;
+                    }
+                },
+                isInitialized: function() {
+                    return initialized;
+                }
+            };
+        })();
+
+        // Game State Variables
+        let score = 0;
+        let difficulty = 'easy';
+        let currentIcon = {};
+        let currentQuestionNumber = 0; // Tracks the current question number
+        let maxQuestions = 0; // Total questions for the current game
+        let correctAnswersStreak = 0;
+        let usedIcons = []; // To track icons used in the current game session
+        let isSoundOn = true; // State for sound toggle
+
+        // DOM Elements
+        const startScreen = document.getElementById('startScreen');
+        const gameScreen = document.getElementById('gameScreen');
+        const endScreen = document.getElementById('endScreen');
+        const startGameBtn = document.getElementById('startGameBtn');
+        const restartGameBtn = document.getElementById('restartGameBtn');
+        const completeGameBtn = document.getElementById('completeGameBtn'); // New button
+        const scoreDisplay = document.getElementById('scoreDisplay');
+        const iconDisplay = document.getElementById('iconDisplay');
+        const choicesContainer = document.getElementById('choicesContainer');
+        const finalScoreDisplay = document.getElementById('finalScoreDisplay');
+        const messageBox = document.getElementById('messageBox');
+
+        const questionCountDisplay = document.getElementById('questionCountDisplay');
+        const maxQuestionsDisplay = document.getElementById('maxQuestionsDisplay');
+        const soundToggleButton = document.getElementById('soundToggleButton');
+        const soundIcon = document.getElementById('soundIcon');
+
+        // Difficulty Buttons
+        const easyBtn = document.getElementById('easyBtn');
+        const mediumBtn = document.getElementById('mediumBtn');
+        const hardBtn = document.getElementById('hardBtn');
+
+        // Audio Context for generating sounds
+        let audioContext;
+
+        // Data for Icons and their names (Expanded for more variety and descriptions)
+        const iconsData = [
+            // Easy Difficulty Icons
+            { class: 'fas fa-folder', name: 'Folder', difficulty: 'easy', description: 'Used to organize files.' },
+            { class: 'fas fa-file', name: 'File', difficulty: 'easy', description: 'Represents a document or data.' },
+            { class: 'fas fa-save', name: 'Save', difficulty: 'easy', description: 'To store your work.' },
+            { class: 'fas fa-print', name: 'Print', difficulty: 'easy', description: 'To send a document to a printer.' },
+            { class: 'fas fa-trash', name: 'Trash', difficulty: 'easy', description: 'Where deleted items go.' },
+            { class: 'fas fa-cloud', name: 'Cloud', difficulty: 'easy', description: 'Symbolizes cloud storage or online services.' },
+            { class: 'fas fa-wifi', name: 'Wi-Fi', difficulty: 'easy', description: 'Indicates wireless network connectivity.' },
+            { class: 'fas fa-keyboard', name: 'Keyboard', difficulty: 'easy', description: 'Used for typing and input.' },
+            { class: 'fas fa-mouse', name: 'Mouse', difficulty: 'easy', description: 'Used for pointing and clicking.' },
+            { class: 'fas fa-desktop', name: 'Desktop', difficulty: 'easy', description: 'Represents a computer screen.' },
+            { class: 'fas fa-mobile-alt', name: 'Mobile Phone', difficulty: 'easy', description: 'A smartphone or cellular device.' },
+            { class: 'fas fa-download', name: 'Download', difficulty: 'easy', description: 'To transfer data from the internet to your device.' },
+            { class: 'fas fa-home', name: 'Home', difficulty: 'easy', description: 'To return to the main page or directory.' },
+            { class: 'fas fa-undo', name: 'Undo', difficulty: 'easy', description: 'To reverse the last action.' },
+            { class: 'fas fa-redo', name: 'Redo', difficulty: 'easy', description: 'To re-apply a previously undone action.' },
+            { class: 'fas fa-volume-up', name: 'Volume Up', difficulty: 'easy', description: 'To increase sound.' },
+            { class: 'fas fa-volume-mute', name: 'Mute', difficulty: 'easy', description: 'To turn off sound.' },
+            { class: 'fas fa-bars', name: 'Menu', difficulty: 'easy', description: 'To open a navigation menu.' },
+            { class: 'fas fa-bell', name: 'Notification', difficulty: 'easy', description: 'Indicates new alerts or messages.' },
+            { class: 'fas fa-star', name: 'Favorite', difficulty: 'easy', description: 'To mark something as preferred or important.' },
+            { class: 'fas fa-comment', name: 'Comment', difficulty: 'easy', description: 'To add a note or remark.' },
+            { class: 'fas fa-image', name: 'Image', difficulty: 'easy', description: 'Represents a picture or graphic.' },
+            { class: 'fas fa-video', name: 'Video', difficulty: 'easy', description: 'Represents a video file or stream.' },
+            { class: 'fas fa-music', name: 'Audio', difficulty: 'easy', description: 'Represents sound or music.' },
+
+            // Medium Difficulty Icons
+            { class: 'fas fa-upload', name: 'Upload', difficulty: 'medium', description: 'To send data from your device to the internet.' },
+            { class: 'fas fa-cogs', name: 'Settings', difficulty: 'medium', description: 'To adjust application or system preferences.' },
+            { class: 'fas fa-envelope', name: 'Email', difficulty: 'medium', description: 'To compose or check electronic messages.' },
+            { class: 'fas fa-globe', name: 'Browser', difficulty: 'medium', description: 'To access websites on the internet.' },
+            { class: 'fas fa-camera', name: 'Camera', difficulty: 'medium', description: 'To take a photo or record video.' },
+            { class: 'fas fa-microphone', name: 'Microphone', difficulty: 'medium', description: 'For audio input or voice recording.' },
+            { class: 'fas fa-headphones', name: 'Headphones', difficulty: 'medium', description: 'For listening to audio privately.' },
+            { class: 'fas fa-link', name: 'Link', difficulty: 'medium', description: 'To create a connection to another resource.' },
+            { class: 'fas fa-cut', name: 'Cut', difficulty: 'medium', description: 'To remove selected content and place it on the clipboard.' },
+            { class: 'fas fa-copy', name: 'Copy', difficulty: 'medium', description: 'To duplicate selected content to the clipboard.' },
+            { class: 'fas fa-paste', name: 'Paste', difficulty: 'medium', description: 'To insert content from the clipboard.' },
+            { class: 'fas fa-share-alt', name: 'Share', difficulty: 'medium', description: 'To distribute content to others.' },
+            { class: 'fas fa-calendar-alt', name: 'Calendar', difficulty: 'medium', description: 'To view or manage dates and events.' },
+            { class: 'fas fa-address-book', name: 'Contacts', difficulty: 'medium', description: 'To access your saved contact information.' },
+            { class: 'fas fa-calculator', name: 'Calculator', difficulty: 'medium', description: 'For performing mathematical operations.' },
+            { class: 'fas fa-chart-bar', name: 'Chart', difficulty: 'medium', description: 'To visualize data trends.' },
+            { class: 'fas fa-tags', name: 'Tags', difficulty: 'medium', description: 'To categorize or label content.' },
+            { class: 'fas fa-lock', name: 'Lock', difficulty: 'medium', description: 'Indicates security or restricted access.' },
+            { class: 'fas fa-unlock', name: 'Unlock', difficulty: 'medium', description: 'Indicates open access or removal of restriction.' },
+            { class: 'fas fa-exclamation-triangle', name: 'Warning', difficulty: 'medium', description: 'Alerts to a potential issue or caution.' },
+            { class: 'fas fa-info-circle', name: 'Info', difficulty: 'medium', description: 'Provides additional information.' },
+            { class: 'fas fa-comments', name: 'Chat', difficulty: 'medium', description: 'For instant messaging or discussion.' },
+            { class: 'fas fa-shopping-cart', name: 'Shopping Cart', difficulty: 'medium', description: 'To hold items selected for purchase.' },
+            { class: 'fas fa-credit-card', name: 'Credit Card', difficulty: 'medium', description: 'For payment or financial transactions.' },
+            { class: 'fas fa-user', name: 'User', difficulty: 'medium', description: 'Represents an individual user profile.' },
+            { class: 'fas fa-users', name: 'Group', difficulty: 'medium', description: 'Represents multiple users or a community.' },
+            { class: 'fas fa-wrench', name: 'Tools', difficulty: 'medium', description: 'For utility functions or adjustments.' },
+            { class: 'fas fa-plug', name: 'Plugin', difficulty: 'medium', description: 'An add-on component for software.' },
+            { class: 'fas fa-power-off', name: 'Power Off', difficulty: 'medium', description: 'To shut down or turn off a device.' },
+            { class: 'fas fa-search-plus', name: 'Zoom In', difficulty: 'medium', description: 'To magnify content.' },
+            { class: 'fas fa-search-minus', name: 'Zoom Out', difficulty: 'medium', description: 'To reduce content size.' },
+            { class: 'fas fa-highlighter', name: 'Highlight', difficulty: 'medium', description: 'To emphasize text or elements.' },
+            { class: 'fas fa-palette', name: 'Palette', difficulty: 'medium', description: 'For selecting colors or artistic tools.' },
+            { class: 'fas fa-fill-drip', name: 'Fill Color', difficulty: 'medium', description: 'To apply a background color.' },
+            { class: 'fas fa-eraser', name: 'Eraser', difficulty: 'medium', description: 'To remove marks or content.' },
+
+            // Hard Difficulty Icons
+            { class: 'fas fa-compass', name: 'Compass', difficulty: 'hard', description: 'For navigation or direction.' },
+            { class: 'fas fa-lightbulb', name: 'Idea', difficulty: 'hard', description: 'Symbolizes a new idea or suggestion.' },
+            { class: 'fas fa-magnifying-glass', name: 'Search', difficulty: 'hard', description: 'To find specific information.' },
+            { class: 'fas fa-database', name: 'Database', difficulty: 'hard', description: 'For structured storage of data.' },
+            { class: 'fas fa-server', name: 'Server', difficulty: 'hard', description: 'A computer that provides data to other computers.' },
+            { class: 'fas fa-sync-alt', name: 'Sync', difficulty: 'hard', description: 'To synchronize data across devices.' },
+            { class: 'fas fa-code', name: 'Code', difficulty: 'hard', description: 'Represents programming or source code.' },
+            { class: 'fas fa-terminal', name: 'Terminal', difficulty: 'hard', description: 'A command-line interface.' },
+            { class: 'fas fa-bug', name: 'Bug', difficulty: 'hard', description: 'Indicates a software error or issue.' },
+            { class: 'fas fa-network-wired', name: 'Network', difficulty: 'hard', description: 'Represents a connected system of devices.' },
+            { class: 'fas fa-ethernet', name: 'Ethernet', difficulty: 'hard', description: 'For wired network connection.' },
+            { class: 'fas fa-hdd', name: 'Hard Drive', difficulty: 'hard', description: 'A data storage device.' },
+            { class: 'fas fa-sd-card', name: 'SD Card', difficulty: 'hard', description: 'A type of portable memory card.' },
+            { class: 'fas fa-sim-card', name: 'SIM Card', difficulty: 'hard', description: 'Identifies a mobile subscriber.' },
+            { class: 'fas fa-gamepad', name: 'Gamepad', difficulty: 'hard', description: 'Used for playing video games.' },
+            { class: 'fas fa-puzzle-piece', name: 'Puzzle', difficulty: 'hard', description: 'Represents an integration or add-on.' },
+            { class: 'fas fa-chart-pie', name: 'Pie Chart', difficulty: 'hard', description: 'To show proportions of a whole.' },
+            { class: 'fas fa-sitemap', name: 'Sitemap', difficulty: 'hard', description: 'A hierarchical view of website pages.' },
+            { class: 'fas fa-robot', name: 'Robot', difficulty: 'hard', description: 'Symbolizes automation or AI.' },
+            { class: 'fas fa-fingerprint', name: 'Fingerprint', difficulty: 'hard', description: 'For biometric authentication.' },
+            { class: 'fas fa-key', name: 'Key', difficulty: 'hard', description: 'Represents access or security.' },
+            { class: 'fas fa-compress-alt', name: 'Compress', difficulty: 'hard', description: 'To reduce file size.' },
+            { class: 'fas fa-expand-alt', name: 'Expand', difficulty: 'hard', description: 'To enlarge or show more.' },
+            { class: 'fas fa-clipboard', name: 'Clipboard', difficulty: 'hard', description: 'Temporary storage for cut/copied content.' },
+            { class: 'fas fa-tasks', name: 'Tasks', difficulty: 'hard', description: 'For managing to-do lists or assignments.' },
+            { class: 'fas fa-th-list', name: 'List View', difficulty: 'hard', description: 'To display items as a vertical list.' },
+            { class: 'fas fa-th-large', name: 'Grid View', difficulty: 'hard', description: 'To display items in a grid format.' },
+            { class: 'fas fa-map-marker-alt', name: 'Location', difficulty: 'hard', description: 'Indicates a geographical position.' },
+            { class: 'fas fa-route', name: 'Route', difficulty: 'hard', description: 'For navigation paths or directions.' },
+            { class: 'fas fa-headset', name: 'Headset', difficulty: 'hard', description: 'A combination of headphones and a microphone.' },
+            { class: 'fas fa-satellite-dish', name: 'Satellite', difficulty: 'hard', description: 'For satellite communication or TV.' },
+            { class: 'fas fa-broadcast-tower', name: 'Broadcast', difficulty: 'hard', description: 'For transmitting signals.' },
+            { class: 'fas fa-file-pdf', name: 'PDF File', difficulty: 'hard', description: 'A Portable Document Format file.' },
+            { class: 'fas fa-file-word', name: 'Word Document', difficulty: 'hard', description: 'A document created with Microsoft Word.' },
+            { class: 'fas fa-file-excel', name: 'Excel Sheet', difficulty: 'hard', description: 'A spreadsheet created with Microsoft Excel.' },
+            { class: 'fas fa-file-powerpoint', name: 'PowerPoint', difficulty: 'hard', description: 'A presentation created with Microsoft PowerPoint.' },
+            { class: 'fas fa-file-image', name: 'Image File', difficulty: 'hard', description: 'A file containing an image.' },
+            { class: 'fas fa-file-audio', name: 'Audio File', difficulty: 'hard', description: 'A file containing audio.' },
+            { class: 'fas fa-file-video', name: 'Video File', difficulty: 'hard', description: 'A file containing video.' },
+            { class: 'fas fa-cube', name: '3D Cube', difficulty: 'hard', description: 'Represents three-dimensional objects.' },
+            { class: 'fas fa-cubes', name: '3D Cubes', difficulty: 'hard', description: 'Represents multiple three-dimensional objects.' },
+            { class: 'fas fa-layer-group', name: 'Layers', difficulty: 'hard', description: 'Used in graphic design for overlapping elements.' },
+            { class: 'fas fa-align-left', name: 'Align Left', difficulty: 'hard', description: 'To align text or objects to the left margin.' },
+            { class: 'fas fa-align-center', name: 'Align Center', difficulty: 'hard', description: 'To center text or objects.' },
+            { class: 'fas fa-align-right', name: 'Align Right', difficulty: 'hard', description: 'To align text or objects to the right margin.' },
+            { class: 'fas fa-align-justify', name: 'Justify Text', difficulty: 'hard', description: 'To align text to both left and right margins.' },
+            { class: 'fas fa-bold', name: 'Bold', difficulty: 'hard', description: 'To make text thicker.' },
+            { class: 'fas fa-italic', name: 'Italic', difficulty: 'hard', description: 'To slant text.' },
+            { class: 'fas fa-underline', name: 'Underline', difficulty: 'hard', description: 'To draw a line beneath text.' },
+            { class: 'fas fa-strikethrough', name: 'Strikethrough', difficulty: 'hard', description: 'To draw a line through text.' },
+        ];
+
+        // Functions to generate simple audio tones
+        function playTone(frequency, duration, type = 'sine', gainValue = 0.1) {
+            if (!isSoundOn) return; // Only play if sound is enabled
+
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.type = type;
+            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(gainValue, audioContext.currentTime);
+
+            oscillator.start();
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+
+        function playCorrectSound() {
+            playTone(880, 0.1); // High pitch for correct
+        }
+
+        function playIncorrectSound() {
+            playTone(220, 0.2, 'sawtooth', 0.15); // Low pitch, longer for incorrect
+        }
+
+        // Displays a temporary message box with optional correct answer and description
+        function showMessageBox(message, duration = 1500) {
+            messageBox.innerHTML = message; // Use innerHTML to allow for span tag
+            messageBox.classList.add('show');
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+            }, duration);
+        }
+
+        // Filters icons based on selected difficulty and ensures no repetition within a game session
+        function getIconsForDifficulty(currentDifficulty) {
+            let filteredIcons = [];
+            if (currentDifficulty === 'easy') {
+                filteredIcons = iconsData.filter(icon => icon.difficulty === 'easy');
+            } else if (currentDifficulty === 'medium') {
+                filteredIcons = iconsData.filter(icon => icon.difficulty === 'easy' || icon.difficulty === 'medium');
+            } else { // 'hard'
+                filteredIcons = iconsData; // All icons for hard
+            }
+            // Filter out icons that have already been used in this session
+            return filteredIcons.filter(icon => !usedIcons.includes(icon.name));
+        }
+
+        // Generates a new question (icon and choices)
+        function generateQuestion() {
+            // Check if max questions reached before generating a new one
+            if (currentQuestionNumber >= maxQuestions) {
+                endGame();
+                return;
+            }
+
+            const availableIconsForCurrentDifficulty = getIconsForDifficulty(difficulty);
+
+            // If all unique icons for the current difficulty have been used, reset `usedIcons`
+            // This allows the game to continue even if a smaller subset of icons exists
+            if (availableIconsForCurrentDifficulty.length === 0 && iconsData.filter(icon => icon.difficulty === difficulty || (difficulty === 'medium' && icon.difficulty === 'easy')).length > 0) {
+                usedIcons = []; // Reset used icons to allow for a fresh set of questions
+                showMessageBox("Running out of unique icons! Recycling previous ones.", 2000);
+            }
+
+            const iconsToChooseFrom = getIconsForDifficulty(difficulty);
+            if (iconsToChooseFrom.length === 0) {
+                 showMessageBox("No icons available for this difficulty. Please restart or select another.", 3000);
+                 endGame(); // End the game if no icons can be found
+                 return;
+            }
+
+            // Select a random icon for the current question from unused icons
+            const randomIndex = Math.floor(Math.random() * iconsToChooseFrom.length);
+            currentIcon = iconsToChooseFrom[randomIndex];
+            usedIcons.push(currentIcon.name); // Add the chosen icon to the used list
+
+            // Get the correct answer name
+            const correctAnswer = currentIcon.name;
+
+            // Determine number of choices based on difficulty
+            let numberOfChoices;
+            if (difficulty === 'easy') numberOfChoices = 6;
+            else if (difficulty === 'medium') numberOfChoices = 8;
+            else if (difficulty === 'hard') numberOfChoices = 10;
+
+            // Prepare incorrect answers
+            let incorrectAnswers = [];
+            // Get all other icons (even those already used, for generating incorrect options if needed, but prioritize unused)
+            const allOtherIcons = iconsData.filter(icon => icon.name !== correctAnswer);
+
+            // Try to pick incorrect answers from icons not yet used in this session
+            const unusedOtherIcons = allOtherIcons.filter(icon => !usedIcons.includes(icon.name));
+            let potentialIncorrects = unusedOtherIcons.length > 0 ? unusedOtherIcons : allOtherIcons; // Fallback to all if no unused available
+
+            // Shuffle potential incorrects and pick the required number
+            potentialIncorrects = potentialIncorrects.sort(() => 0.5 - Math.random());
+            let tempIncorrects = [];
+            for (let i = 0; tempIncorrects.length < (numberOfChoices - 1) && i < potentialIncorrects.length; i++) {
+                if (!tempIncorrects.includes(potentialIncorrects[i].name)) {
+                    tempIncorrects.push(potentialIncorrects[i].name);
+                }
+            }
+            incorrectAnswers = tempIncorrects;
+
+            // Fallback if not enough unique incorrect answers can be found (very rare with expanded list)
+            while (incorrectAnswers.length < (numberOfChoices - 1)) {
+                const randomOther = allOtherIcons[Math.floor(Math.random() * allOtherIcons.length)];
+                if (!incorrectAnswers.includes(randomOther.name) && randomOther.name !== correctAnswer) {
+                    incorrectAnswers.push(randomOther.name);
+                }
+            }
+
+            // Combine correct and incorrect answers and shuffle them
+            let choices = [correctAnswer, ...incorrectAnswers];
+            choices = choices.sort(() => 0.5 - Math.random()); // Shuffle array
+
+            // Update UI
+            iconDisplay.innerHTML = `<i class="${currentIcon.class}"></i>`;
+            choicesContainer.innerHTML = ''; // Clear previous choices
+
+            choices.forEach(choice => {
+                const button = document.createElement('button');
+                button.textContent = choice;
+                button.classList.add('choice-button');
+                button.dataset.answer = choice; // Store answer for easy lookup
+                button.addEventListener('click', () => checkAnswer(button, choice, correctAnswer));
+                choicesContainer.appendChild(button);
+            });
+
+            currentQuestionNumber++; // Increment question count for display
+            updateQuestionDisplay(); // Update the question counter
+        }
+
+        // Checks the user's answer
+        function checkAnswer(clickedButton, selectedAnswer, correctAnswer) {
+            // Disable all buttons to prevent multiple clicks
+            Array.from(choicesContainer.children).forEach(button => {
+                button.classList.add('disabled');
+                button.style.pointerEvents = 'none'; // Ensure no more clicks
+            });
+
+            let feedbackMessage = '';
+            if (selectedAnswer === correctAnswer) {
+                score += getScoreValue('correct');
+                playCorrectSound();
+                feedbackMessage = `Correct! + ${getScoreValue('correct')}<br><span>${currentIcon.description}</span>`;
+                clickedButton.classList.add('correct-answer-button'); // Green feedback
+                correctAnswersStreak++;
+            } else {
+                score -= getScoreValue('incorrect');
+                playIncorrectSound();
+                // Find the correct button to highlight it
+                const correctButton = Array.from(choicesContainer.children).find(
+                    button => button.dataset.answer === correctAnswer
+                );
+                if (correctButton) {
+                    correctButton.classList.add('correct-answer-button'); // Highlight correct answer
+                }
+                clickedButton.classList.add('incorrect-answer-button'); // Red feedback for incorrect
+                feedbackMessage = `Incorrect! - ${getScoreValue('incorrect')}<br><span>The correct answer was "${correctAnswer}". ${currentIcon.description}</span>`;
+                correctAnswersStreak = 0; // Reset streak on incorrect answer
+            }
+            score = Math.max(0, score); // Ensure score doesn't go below zero
+            showMessageBox(feedbackMessage, 2500); // Display message for a bit longer
+
+            updateScore();
+
+            // Delay next question to allow user to see feedback
+            setTimeout(() => {
+                // Remove feedback classes and re-enable buttons
+                Array.from(choicesContainer.children).forEach(button => {
+                    button.classList.remove('correct-answer-button', 'incorrect-answer-button', 'disabled');
+                    button.style.pointerEvents = 'auto'; // Re-enable clicks
+                });
+
+                if (currentQuestionNumber < maxQuestions) {
+                    generateQuestion(); // Move to the next question
+                } else {
+                    endGame(); // End game if max questions reached
+                }
+            }, 2000); // Display feedback for 2 seconds before next question
+        }
+
+        // Gets score values based on difficulty
+        function getScoreValue(type) {
+            if (type === 'correct') {
+                if (difficulty === 'easy') return 10;
+                if (difficulty === 'medium') return 15;
+                if (difficulty === 'hard') return 20;
+            } else { // incorrect
+                if (difficulty === 'easy') return 0; // No penalty on easy
+                if (difficulty === 'medium') return 5;
+                if (difficulty === 'hard') return 10;
+            }
+            return 0; // Default
+        }
+
+        // Updates the score display
+        function updateScore() {
+            scoreDisplay.textContent = score;
+        }
+
+        // Updates the question count display
+        function updateQuestionDisplay() {
+            questionCountDisplay.textContent = currentQuestionNumber;
+            maxQuestionsDisplay.textContent = maxQuestions;
+        }
+
+        // Starts the game
+        function startGame() {
+            score = 0;
+            currentQuestionNumber = 0; // Reset question counter
+            correctAnswersStreak = 0;
+            usedIcons = []; // Reset used icons for a new game session
+
+            // Set max questions based on difficulty
+            if (difficulty === 'easy') {
+                maxQuestions = 15;
+            }
+            if (difficulty === 'medium') {
+                maxQuestions = 20;
+            }
+            if (difficulty === 'hard') {
+                maxQuestions = 25;
+            }
+
+            updateScore();
+            updateQuestionDisplay(); // Initialize question display
+
+            startScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            endScreen.classList.add('hidden');
+
+            // SCORM: Initialize communication
+            // It's good practice to call init once at the beginning of the SCORM SCO lifecycle
+            // but also ensure it's re-initialized if a new game starts in the same session
+            if (!SCORM.isInitialized()) {
+                SCORM.init();
+            }
+
+            generateQuestion(); // Generate the first question (which increments currentQuestionNumber)
+        }
+
+        // Ends the game
+        function endGame() {
+            finalScoreDisplay.textContent = score;
+            gameScreen.classList.add('hidden');
+            endScreen.classList.remove('hidden');
+
+            // SCORM: Set completion status and score when the game naturally ends
+            // The explicit button will also use this logic.
+            sendScormCompletion();
+        }
+
+        // Function to send SCORM completion data explicitly
+        function sendScormCompletion() {
+            if (SCORM.isInitialized()) {
+                console.log("SCORM: Sending completion status and score.");
+                SCORM.set("cmi.core.lesson_status", "completed"); // Or "passed" if a passing score is defined
+                SCORM.set("cmi.core.score.raw", score.toString()); // Report raw score as string
+                SCORM.commit(); // Save data
+                SCORM.finish(); // Terminate communication
+                showMessageBox("Game completion sent to LMS!", 2000);
+                completeGameBtn.disabled = true; // Disable button after successful submission
+            } else {
+                console.warn("SCORM: SCORM API not initialized. Cannot send completion data.");
+                showMessageBox("SCORM not connected. Completion could not be sent.", 2000);
+            }
+        }
+
+
+        // Event Listeners
+        startGameBtn.addEventListener('click', startGame);
+        restartGameBtn.addEventListener('click', startGame); // Restart also calls startGame
+
+        // New: Event listener for the "Mark as Complete" button
+        completeGameBtn.addEventListener('click', sendScormCompletion);
+
+        // Difficulty button listeners
+        easyBtn.addEventListener('click', () => {
+            difficulty = 'easy';
+            easyBtn.classList.add('selected');
+            mediumBtn.classList.remove('selected');
+            hardBtn.classList.remove('selected');
+        });
+        mediumBtn.addEventListener('click', () => {
+            difficulty = 'medium';
+            easyBtn.classList.remove('selected');
+            mediumBtn.classList.add('selected');
+            hardBtn.classList.remove('selected');
+        });
+        hardBtn.addEventListener('click', () => {
+            difficulty = 'hard';
+            easyBtn.classList.remove('selected');
+            mediumBtn.classList.remove('selected');
+            hardBtn.classList.add('selected');
+        });
+
+        // Sound Toggle Listener
+        soundToggleButton.addEventListener('click', () => {
+            isSoundOn = !isSoundOn; // Toggle sound state
+            if (isSoundOn) {
+                soundIcon.classList.remove('fa-volume-mute');
+                soundIcon.classList.add('fa-volume-up');
+                showMessageBox("Sound ON", 1000);
+            } else {
+                soundIcon.classList.remove('fa-volume-up');
+                soundIcon.classList.add('fa-volume-mute');
+                showMessageBox("Sound OFF", 1000);
+            }
+        });
+
+        // Initialize audio context on first user interaction to bypass browser autoplay policies
+        document.addEventListener('click', () => {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }, { once: true }); // Only run once
+
+        // SCORM: Ensure LMSFinish is called on page unload
+        // This is a crucial step for SCORM to properly record completion if the user closes the window
+        window.onbeforeunload = function() {
+            if (SCORM.isInitialized()) {
+                console.log("SCORM: Calling commit and finish on window unload.");
+                SCORM.commit(); // Commit any outstanding data
+                SCORM.finish(); // Terminate communication
+            }
+        };
+
+    </script>
+</body>
+</html>
